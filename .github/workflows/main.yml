@@ -14,11 +14,33 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+
       - name: Set up JDK 17
         uses: actions/setup-java@v2
         with:
           java-version: '17'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
       - name: Build with Maven
         run: mvn clean install
         env:
           DISTRIBUTION: 'jdk'
+
+      - name: Run tests
+        run: mvn test
+
+      - name: Run PMD analysis
+        run: mvn pmd:pmd
+
+      - name: Deploy to server
+        run: |
+          read -p "Enter username: " username
+          read -sp "Enter password: " password
+          mvn deploy -DskipTests -Dusername=$username -Dpassword=$password
